@@ -1,106 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
   <title>Location Tracker</title>
   <style>
     body {
-      margin: 0;
-      background-image: url('https://youhave1.github.io/Youhave/hacked.jpg'); /* آدرس تصویر شما */
-      background-size: cover;
-      background-position: center;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      background-color: #000;
+      color: #0f0;
+      font-family: monospace;
+      text-align: center;
+      padding-top: 50px;
     }
-
     button {
       padding: 15px 30px;
-      font-size: 18px;
-      background-color: #ff0000cc;
-      color: white;
-      border: none;
-      border-radius: 10px;
+      font-size: 20px;
+      background-color: #222;
+      color: #0f0;
+      border: 1px solid #0f0;
       cursor: pointer;
-    }
-
-    #status {
-      position: absolute;
-      bottom: 20px;
-      background-color: rgba(0,0,0,0.5);
-      color: #fff;
-      padding: 10px 15px;
-      border-radius: 8px;
-      font-family: sans-serif;
     }
   </style>
 </head>
 <body>
-  <button onclick="getLocation()">مکان‌یابی</button>
-  <div id="status">در انتظار کلیک...</div>
+
+  <h1>Location Tracker</h1>
+  <button onclick="sendLocation()">ارسال مکان</button>
 
   <script>
-    function getLocation() {
-      const status = document.getElementById("status");
+    function sendLocation() {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+          const data = {
+            Timestamp: new Date().toISOString(),
+            Latitude: position.coords.latitude,
+            Longitude: position.coords.longitude,
+            Accuracy: position.coords.accuracy
+          };
 
-      if (navigator.geolocation) {
-        status.innerText = "در حال دریافت مکان...";
-        navigator.geolocation.getCurrentPosition(sendLocation, showError);
-      } else {
-        status.innerText = "مکان‌یابی توسط مرورگر پشتیبانی نمی‌شود.";
-      }
-    }
-
-    function sendLocation(position) {
-      const lat = position.coords.latitude;
-      const lon = position.coords.longitude;
-      const acc = position.coords.accuracy;
-
-      const data = {
-        Timestamp: new Date().toISOString(),
-        Latitude: lat,
-        Longitude: lon,
-        Accuracy: acc
-      };
-
-      fetch("https://api.sheetbest.com/sheets/c9a21322-8d08-4b0a-9ac8-de58e8df3b0f", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
+          fetch("https://api.sheetbest.com/sheets/c9a21322-8d08-4b0a-9ac8-de58e8df3b0f", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(data)
+          })
+          .then(res => {
+            if (res.ok) {
+              alert("مکان ارسال شد!");
+            } else {
+              alert("ارسال ناموفق بود!");
+            }
+          })
+          .catch(err => alert("خطا در ارسال مکان: " + err));
         },
-        body: JSON.stringify(data)
-      })
-      .then(response => {
-        if (response.ok) {
-          document.getElementById("status").innerText = "مکان ذخیره شد!";
-        } else {
-          document.getElementById("status").innerText = "خطا در ارسال داده.";
-        }
-      })
-      .catch(error => {
-        document.getElementById("status").innerText = "خطای ارتباط با سرور.";
-      });
-    }
-
-    function showError(error) {
-      const status = document.getElementById("status");
-      switch(error.code) {
-        case error.PERMISSION_DENIED:
-          status.innerText = "اجازه مکان‌یابی داده نشد.";
-          break;
-        case error.POSITION_UNAVAILABLE:
-          status.innerText = "مکان در دسترس نیست.";
-          break;
-        case error.TIMEOUT:
-          status.innerText = "درخواست زمان‌بر شد.";
-          break;
-        default:
-          status.innerText = "خطای نامشخص.";
-          break;
+        function(error) {
+          alert("عدم دسترسی به مکان: " + error.message);
+        });
+      } else {
+        alert("مرورگر شما از مکان‌یابی پشتیبانی نمی‌کند.");
       }
     }
   </script>
+
 </body>
 </html>
