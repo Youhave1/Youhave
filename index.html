@@ -2,9 +2,52 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>ارسال مکان</title>
+  <title>ارسال مکان به Google Sheet</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      text-align: center;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin-top: 100px;
+      background-color: #f4f7f6;
+      color: #333;
+    }
+    h2 {
+      color: #2c3e50;
+      margin-bottom: 30px;
+    }
+    button {
+      background-color: #4CAF50; /* Green */
+      border: none;
+      color: white;
+      padding: 15px 32px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 4px 2px;
+      cursor: pointer;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #status {
+      margin-top: 20px;
+      font-weight: bold;
+      color: #555;
+    }
+    .error {
+      color: #e74c3c;
+    }
+    .success {
+      color: #27ae60;
+    }
+  </style>
 </head>
-<body style="text-align:center; font-family:sans-serif; margin-top:100px;">
+<body>
 
   <h2>ارسال مکان به Google Sheet</h2>
   <button onclick="sendLocation()">ارسال مکان</button>
@@ -13,6 +56,10 @@
 
   <script>
     function sendLocation() {
+      const statusElement = document.getElementById("status");
+      statusElement.innerText = "در حال دریافت مکان...";
+      statusElement.className = ""; // پاک کردن کلاس‌های قبلی
+
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(function(position) {
           const formData = new URLSearchParams();
@@ -21,19 +68,63 @@
           formData.append("Longitude", position.coords.longitude);
           formData.append("Accuracy", position.coords.accuracy);
 
-          fetch("https://script.google.com/macros/s/AKfycbxCQ3AIMDctelAO6N1faYA_52M6NpZyzO8tQgMYi-Jprl1l4QddnLT0mgVQ-HjmetIR/exec", {
+          // ****** این URL باید URL دیپلوی‌شده وب‌اپلیکیشن Google Apps Script شما باشد ******
+          // ****** مطمئن شوید که این URL را با URL واقعی خود جایگزین کرده‌اید ******
+          const googleAppsScriptURL = "https://script.google.com/macros/s/AKfycbxCQ3AIMDctelAO6N1faYA_52M6NpZyzO8tQgMYi-Jprl1l4QddnLT0mgVQ-HjmetIR/exec"; 
+          // URL شما که قبلا فرستادید را اینجا گذاشتم، اما اگر تغییر کرده، باید آن را به روز کنید.
+
+          fetch(googleAppsScriptURL, {
             method: "POST",
-            body: formData
-          }).then(() => {
-            document.getElementById("status").innerText = "مکان ارسال شد!";
-          }).catch((error) => {
-            document.getElementById("status").innerText = "خطا در ارسال: " + error;
+            body: formData,
+            // این هدر برای برخی محیط‌ها مفید است، اما معمولاً برای Apps Script ضروری نیست.
+            // headers: {
+            //   'Content-Type': 'application/x-www-form-urlencoded',
+            // }
+          })
+          .then(response => {
+            if (!response.ok) {
+              // اگر پاسخ موفقیت‌آمیز نبود (مثلاً 404 یا 500)
+              throw new Error(HTTP error! status: ${response.status});
+            }
+            return response.text(); // پاسخ متنی را بخوانید
+          })
+          .then(data => {
+            if (data === "OK") {
+              statusElement.innerText = "مکان با موفقیت ارسال شد!";
+              statusElement.className = "success";
+            } else {
+              statusElement.innerText = "ارسال با خطا مواجه شد: " + data;
+              statusElement.className = "error";
+            }
+          })
+          .catch((error) => {
+            statusElement.innerText = "خطا در ارسال: " + error.message;
+            statusElement.className = "error";
+            console.error('Fetch error:', error); // برای اشکال‌زدایی در کنسول
           });
         }, function(error) {
-          document.getElementById("status").innerText = "خطا در مکان‌یابی: " + error.message;
+          let errorMessage = "خطا در مکان‌یابی: ";
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage += "شما اجازه دسترسی به مکان را ندادید.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage += "اطلاعات مکانی در دسترس نیست.";
+              break;
+            case error.TIMEOUT:
+              errorMessage += "درخواست مکان‌یابی زمان‌بر شد.";
+              break;
+            case error.UNKNOWN_ERROR:
+              errorMessage += "خطای ناشناخته رخ داد.";
+              break;
+          }
+          statusElement.innerText = errorMessage;
+          statusElement.className = "error";
+          console.error('Geolocation error:', error); // برای اشکال‌زدایی در کنسول
         });
       } else {
-        document.getElementById("status").innerText = "مرورگر از مکان‌یابی پشتیبانی نمی‌کند.";
+        statusElement.innerText = "متأسفانه، مرورگر شما از مکان‌یابی پشتیبانی نمی‌کند.";
+        statusElement.className = "error";
       }
     }
   </script>
