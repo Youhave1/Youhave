@@ -2,49 +2,41 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>مکان‌یابی</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      margin-top: 100px;
-    }
-    button {
-      font-size: 18px;
-      padding: 10px 20px;
-    }
-  </style>
+  <title>ارسال مکان</title>
 </head>
-<body>
-  <h2>ارسال مکان به Google Sheets</h2>
-  <button onclick="sendLocation()">مکان‌یابی</button>
+<body style="text-align:center; font-family:sans-serif; margin-top:100px;">
+
+  <h2>ارسال مکان به Google Sheet</h2>
+  <button onclick="sendLocation()">ارسال مکان</button>
+
+  <p id="status"></p>
 
   <script>
     function sendLocation() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(function(position) {
           const data = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy
+            Timestamp: new Date().toISOString(),
+            Latitude: position.coords.latitude,
+            Longitude: position.coords.longitude,
+            Accuracy: position.coords.accuracy
           };
 
           fetch("https://script.google.com/macros/s/AKfycbxCQ3AIMDctelAO6N1faYA_52M6NpZyzO8tQgMYi-Jprl1l4QddnLT0mgVQ-HjmetIR/exec", {
             method: "POST",
-            body: JSON.stringify(data),
+            mode: "no-cors",
             headers: {
               "Content-Type": "application/json"
-            }
-          })
-          .then(response => response.text())
-          .then(result => alert("مکان ارسال شد"))
-          .catch(error => alert("خطا در ارسال: " + error));
-        },
-        function(error) {
-          alert("دسترسی مکان رد شد یا خطا داشت.");
+            },
+            body: JSON.stringify(data)
+          });
+
+          document.getElementById("status").innerText = "مکان ارسال شد!";
+        }, function(error) {
+          document.getElementById("status").innerText = "خطا در مکان‌یابی: " + error.message;
         });
       } else {
-        alert("مرورگر شما از مکان‌یابی پشتیبانی نمی‌کند.");
+        document.getElementById("status").innerText = "مرورگر شما از مکان‌یابی پشتیبانی نمی‌کند.";
       }
     }
   </script>
