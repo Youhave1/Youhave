@@ -2,79 +2,42 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>مکان زنده کاربران</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <style>
-    #map { height: 90vh; width: 100%; }
-    body { margin: 0; font-family: sans-serif; text-align: center; }
-    button { margin-top: 10px; padding: 10px 20px; font-size: 16px; }
-  </style>
+  <title>ارسال مکان</title>
 </head>
-<body>
+<body style="text-align:center; font-family:sans-serif; margin-top:100px;">
 
-  <h2>نمایش مکان زنده کاربران</h2>
-  <button onclick="sendLocation()">ارسال مکان من</button>
-  <div id="map"></div>
+  <h2>ارسال مکان به Google Sheet</h2>
+  <button onclick="sendLocation()">ارسال مکان</button>
+  <p id="status"></p>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const scriptURL = "YOUR_WEB_APP_URL"; // لینک Web App شما
-
-    const map = L.map('map').setView([34.5, 69.2], 5); // مرکز اولیه نقشه
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-
-    let markers = [];
-
     function sendLocation() {
       if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(pos => {
+        navigator.geolocation.getCurrentPosition(function(position) {
           const data = {
             Timestamp: new Date().toISOString(),
-            Latitude: pos.coords.latitude,
-            Longitude: pos.coords.longitude,
-            Accuracy: pos.coords.accuracy
+            Latitude: position.coords.latitude,
+            Longitude: position.coords.longitude,
+            Accuracy: position.coords.accuracy
           };
 
-          fetch(scriptURL, {
+          fetch("https://script.google.com/macros/s/AKfycbxCQ3AIMDctelAO6N1faYA_52M6NpZyzO8tQgMYi-Jprl1l4QddnLT0mgVQ-HjmetIR/exec", {
             method: "POST",
-            mode: "no-cors",
             headers: {
               "Content-Type": "application/json"
             },
             body: JSON.stringify(data)
-          });
-
-          alert("مکان شما ارسال شد!");
+          })
+          .then(res => res.text())
+          .then(txt => document.getElementById("status").innerText = "ارسال شد: " + txt)
+          .catch(err => document.getElementById("status").innerText = "خطا: " + err);
+        }, function(error) {
+          document.getElementById("status").innerText = "خطا در مکان‌یابی: " + error.message;
         });
       } else {
-        alert("مرورگر شما از مکان‌یابی پشتیبانی نمی‌کند.");
+        document.getElementById("status").innerText = "مرورگر شما از مکان‌یابی پشتیبانی نمی‌کند.";
       }
     }
-
-    function updateMarkers() {
-      fetch(scriptURL)
-        .then(res => res.json())
-        .then(data => {
-          // حذف نشانگرهای قبلی
-          markers.forEach(m => map.removeLayer(m));
-          markers = [];
-
-          data.forEach(loc => {
-            if (loc.Latitude && loc.Longitude) {
-              const marker = L.marker([loc.Latitude, loc.Longitude]).addTo(map);
-              marker.bindPopup(زمان: ${loc.Timestamp}<br>دقت: ${loc.Accuracy});
-              markers.push(marker);
-            }
-          });
-        });
-    }
-
-    // آپدیت خودکار هر 10 ثانیه
-    setInterval(updateMarkers, 10000);
-    updateMarkers(); // اولین بار
   </script>
 </body>
 </html>
