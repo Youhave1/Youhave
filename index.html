@@ -68,28 +68,26 @@
           formData.append("Longitude", position.coords.longitude);
           formData.append("Accuracy", position.coords.accuracy);
 
-          // ****** این URL باید URL دیپلوی‌شده وب‌اپلیکیشن Google Apps Script شما باشد ******
-          // ****** مطمئن شوید که این URL را با URL واقعی خود جایگزین کرده‌اید ******
+          // ****** بسیار مهم: این URL را با URL وب‌اپلیکیشن دیپلوی‌شده خود جایگزین کنید ******
+          // ****** مطمئن شوید که URL از Google Apps Script کپی شده و به /exec ختم می‌شود ******
           const googleAppsScriptURL = "https://script.google.com/macros/s/AKfycbxCQ3AIMDctelAO6N1faYA_52M6NpZyzO8tQgMYi-Jprl1l4QddnLT0mgVQ-HjmetIR/exec"; 
           // URL شما که قبلا فرستادید را اینجا گذاشتم، اما اگر تغییر کرده، باید آن را به روز کنید.
 
           fetch(googleAppsScriptURL, {
             method: "POST",
-            body: formData,
-            // این هدر برای برخی محیط‌ها مفید است، اما معمولاً برای Apps Script ضروری نیست.
-            // headers: {
-            //   'Content-Type': 'application/x-www-form-urlencoded',
-            // }
+            body: formData
           })
           .then(response => {
-            if (!response.ok) {
-              // اگر پاسخ موفقیت‌آمیز نبود (مثلاً 404 یا 500)
-              throw new Error(HTTP error! status: ${response.status});
-            }
-            return response.text(); // پاسخ متنی را بخوانید
+            // همیشه پاسخ را به صورت متنی بخوانید، حتی اگر خطا باشد تا جزئیات را بگیرید.
+            return response.text().then(text => {
+              if (!response.ok) {
+                throw new Error(HTTP error! Status: ${response.status}. Response: ${text});
+              }
+              return text;
+            });
           })
           .then(data => {
-            if (data === "OK") {
+            if (data.trim() === "OK") { // .trim() برای حذف فاصله اضافی در پاسخ
               statusElement.innerText = "مکان با موفقیت ارسال شد!";
               statusElement.className = "success";
             } else {
@@ -100,27 +98,29 @@
           .catch((error) => {
             statusElement.innerText = "خطا در ارسال: " + error.message;
             statusElement.className = "error";
-            console.error('Fetch error:', error); // برای اشکال‌زدایی در کنسول
+            console.error('Fetch error:', error); // نمایش خطای دقیق‌تر در کنسول مرورگر
           });
         }, function(error) {
           let errorMessage = "خطا در مکان‌یابی: ";
           switch (error.code) {
             case error.PERMISSION_DENIED:
-              errorMessage += "شما اجازه دسترسی به مکان را ندادید.";
+              errorMessage += "شما اجازه دسترسی به مکان را ندادید. لطفاً اجازه دسترسی را بدهید.";
               break;
             case error.POSITION_UNAVAILABLE:
-              errorMessage += "اطلاعات مکانی در دسترس نیست.";
+              errorMessage += "اطلاعات مکانی در دسترس نیست. ممکن است GPS فعال نباشد یا سیگنال ضعیف باشد.";
               break;
             case error.TIMEOUT:
-              errorMessage += "درخواست مکان‌یابی زمان‌بر شد.";
+              errorMessage += "درخواست مکان‌یابی زمان‌بر شد. لطفاً دوباره تلاش کنید.";
               break;
             case error.UNKNOWN_ERROR:
-              errorMessage += "خطای ناشناخته رخ داد.";
+              errorMessage += "خطای ناشناخته در مکان‌یابی رخ داد.";
               break;
+            default:
+              errorMessage += error.message; // پیام خطای خود مرورگر
           }
           statusElement.innerText = errorMessage;
           statusElement.className = "error";
-          console.error('Geolocation error:', error); // برای اشکال‌زدایی در کنسول
+          console.error('Geolocation error:', error); // نمایش خطای دقیق‌تر در کنسول مرورگر
         });
       } else {
         statusElement.innerText = "متأسفانه، مرورگر شما از مکان‌یابی پشتیبانی نمی‌کند.";
