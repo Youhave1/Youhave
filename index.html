@@ -15,28 +15,25 @@
     function sendLocation() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(function(position) {
-          const data = {
-            Timestamp: new Date().toISOString(),
-            Latitude: position.coords.latitude,
-            Longitude: position.coords.longitude,
-            Accuracy: position.coords.accuracy
-          };
+          const formData = new URLSearchParams();
+          formData.append("Timestamp", new Date().toISOString());
+          formData.append("Latitude", position.coords.latitude);
+          formData.append("Longitude", position.coords.longitude);
+          formData.append("Accuracy", position.coords.accuracy);
 
           fetch("https://script.google.com/macros/s/AKfycbxCQ3AIMDctelAO6N1faYA_52M6NpZyzO8tQgMYi-Jprl1l4QddnLT0mgVQ-HjmetIR/exec", {
             method: "POST",
-            mode: "no-cors",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify(data)
+            body: formData
+          }).then(() => {
+            document.getElementById("status").innerText = "مکان ارسال شد!";
+          }).catch((error) => {
+            document.getElementById("status").innerText = "خطا در ارسال: " + error;
           });
-
-          document.getElementById("status").innerText = "مکان ارسال شد!";
         }, function(error) {
           document.getElementById("status").innerText = "خطا در مکان‌یابی: " + error.message;
         });
       } else {
-        document.getElementById("status").innerText = "مرورگر شما از مکان‌یابی پشتیبانی نمی‌کند.";
+        document.getElementById("status").innerText = "مرورگر از مکان‌یابی پشتیبانی نمی‌کند.";
       }
     }
   </script>
