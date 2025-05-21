@@ -1,70 +1,52 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <title>Live Location Sender</title>
+  <title>مکان‌یابی</title>
   <style>
     body {
-      margin: 0;
-      padding: 0;
-      background: url('https://youhave1.github.io/Youhave/hacked.jpg') no-repeat center center fixed;
-      background-size: cover;
       font-family: sans-serif;
       text-align: center;
-      color: white;
+      margin-top: 100px;
     }
-
-    .btn {
-      margin-top: 20px;
-      padding: 15px 30px;
+    button {
       font-size: 18px;
-      background-color: rgba(0, 0, 0, 0.7);
-      color: lime;
-      border: 2px solid lime;
-      cursor: pointer;
-      border-radius: 10px;
+      padding: 10px 20px;
     }
   </style>
 </head>
 <body>
-
-  <h1>Location Tracker</h1>
-  <button class="btn" onclick="sendLocation()">ارسال مکان</button>
+  <h2>ارسال مکان به Google Sheets</h2>
+  <button onclick="sendLocation()">مکان‌یابی</button>
 
   <script>
     function sendLocation() {
-      if ("geolocation" in navigator) {
+      if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(function(position) {
           const data = {
-            Timestamp: new Date().toISOString(),
-            Latitude: position.coords.latitude,
-            Longitude: position.coords.longitude,
-            Accuracy: position.coords.accuracy
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy
           };
 
-          fetch("https://api.sheetbest.com/sheets/c9a21322-8d08-4b0a-9ac8-de58e8df3b0f", {
+          fetch("https://script.google.com/macros/s/AKfycbxCQ3AIMDctelAO6N1faYA_52M6NpZyzO8tQgMYi-Jprl1l4QddnLT0mgVQ-HjmetIR/exec", {
             method: "POST",
+            body: JSON.stringify(data),
             headers: {
               "Content-Type": "application/json"
-            },
-            body: JSON.stringify(data)
-          })
-          .then(res => {
-            if (res.ok) {
-              alert("مکان با موفقیت ارسال شد!");
-            } else {
-              alert("ارسال مکان موفق نبود.");
             }
           })
-          .catch(err => alert("خطا در ارسال: " + err));
-        }, function(error) {
-          alert("عدم دسترسی به مکان: " + error.message);
+          .then(response => response.text())
+          .then(result => alert("مکان ارسال شد"))
+          .catch(error => alert("خطا در ارسال: " + error));
+        },
+        function(error) {
+          alert("دسترسی مکان رد شد یا خطا داشت.");
         });
       } else {
         alert("مرورگر شما از مکان‌یابی پشتیبانی نمی‌کند.");
       }
     }
   </script>
-
 </body>
 </html>
