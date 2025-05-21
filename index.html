@@ -2,131 +2,79 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>ارسال مکان به Google Sheet</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مکان زنده کاربران</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    body {
-      text-align: center;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      margin-top: 100px;
-      background-color: #f4f7f6;
-      color: #333;
-    }
-    h2 {
-      color: #2c3e50;
-      margin-bottom: 30px;
-    }
-    button {
-      background-color: #4CAF50; /* Green */
-      border: none;
-      color: white;
-      padding: 15px 32px;
-      text-align: center;
-      text-decoration: none;
-      display: inline-block;
-      font-size: 16px;
-      margin: 4px 2px;
-      cursor: pointer;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      transition: background-color 0.3s ease;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-    #status {
-      margin-top: 20px;
-      font-weight: bold;
-      color: #555;
-    }
-    .error {
-      color: #e74c3c;
-    }
-    .success {
-      color: #27ae60;
-    }
+    #map { height: 90vh; width: 100%; }
+    body { margin: 0; font-family: sans-serif; text-align: center; }
+    button { margin-top: 10px; padding: 10px 20px; font-size: 16px; }
   </style>
 </head>
 <body>
 
-  <h2>ارسال مکان به Google Sheet</h2>
-  <button onclick="sendLocation()">ارسال مکان</button>
+  <h2>نمایش مکان زنده کاربران</h2>
+  <button onclick="sendLocation()">ارسال مکان من</button>
+  <div id="map"></div>
 
-  <p id="status"></p>
-
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    const scriptURL = "YOUR_WEB_APP_URL"; // لینک Web App شما
+
+    const map = L.map('map').setView([34.5, 69.2], 5); // مرکز اولیه نقشه
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    let markers = [];
+
     function sendLocation() {
-      const statusElement = document.getElementById("status");
-      statusElement.innerText = "در حال دریافت مکان...";
-      statusElement.className = ""; // پاک کردن کلاس‌های قبلی
-
       if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-          const formData = new URLSearchParams();
-          formData.append("Timestamp", new Date().toISOString());
-          formData.append("Latitude", position.coords.latitude);
-          formData.append("Longitude", position.coords.longitude);
-          formData.append("Accuracy", position.coords.accuracy);
+        navigator.geolocation.getCurrentPosition(pos => {
+          const data = {
+            Timestamp: new Date().toISOString(),
+            Latitude: pos.coords.latitude,
+            Longitude: pos.coords.longitude,
+            Accuracy: pos.coords.accuracy
+          };
 
-          // ****** بسیار مهم: این URL را با URL وب‌اپلیکیشن دیپلوی‌شده خود جایگزین کنید ******
-          // ****** مطمئن شوید که URL از Google Apps Script کپی شده و به /exec ختم می‌شود ******
-          const googleAppsScriptURL = "https://script.google.com/macros/s/AKfycbxCQ3AIMDctelAO6N1faYA_52M6NpZyzO8tQgMYi-Jprl1l4QddnLT0mgVQ-HjmetIR/exec"; 
-          // URL شما که قبلا فرستادید را اینجا گذاشتم، اما اگر تغییر کرده، باید آن را به روز کنید.
-
-          fetch(googleAppsScriptURL, {
+          fetch(scriptURL, {
             method: "POST",
-            body: formData
-          })
-          .then(response => {
-            // همیشه پاسخ را به صورت متنی بخوانید، حتی اگر خطا باشد تا جزئیات را بگیرید.
-            return response.text().then(text => {
-              if (!response.ok) {
-                throw new Error(HTTP error! Status: ${response.status}. Response: ${text});
-              }
-              return text;
-            });
-          })
-          .then(data => {
-            if (data.trim() === "OK") { // .trim() برای حذف فاصله اضافی در پاسخ
-              statusElement.innerText = "مکان با موفقیت ارسال شد!";
-              statusElement.className = "success";
-            } else {
-              statusElement.innerText = "ارسال با خطا مواجه شد: " + data;
-              statusElement.className = "error";
-            }
-          })
-          .catch((error) => {
-            statusElement.innerText = "خطا در ارسال: " + error.message;
-            statusElement.className = "error";
-            console.error('Fetch error:', error); // نمایش خطای دقیق‌تر در کنسول مرورگر
+            mode: "no-cors",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(data)
           });
-        }, function(error) {
-          let errorMessage = "خطا در مکان‌یابی: ";
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              errorMessage += "شما اجازه دسترسی به مکان را ندادید. لطفاً اجازه دسترسی را بدهید.";
-              break;
-            case error.POSITION_UNAVAILABLE:
-              errorMessage += "اطلاعات مکانی در دسترس نیست. ممکن است GPS فعال نباشد یا سیگنال ضعیف باشد.";
-              break;
-            case error.TIMEOUT:
-              errorMessage += "درخواست مکان‌یابی زمان‌بر شد. لطفاً دوباره تلاش کنید.";
-              break;
-            case error.UNKNOWN_ERROR:
-              errorMessage += "خطای ناشناخته در مکان‌یابی رخ داد.";
-              break;
-            default:
-              errorMessage += error.message; // پیام خطای خود مرورگر
-          }
-          statusElement.innerText = errorMessage;
-          statusElement.className = "error";
-          console.error('Geolocation error:', error); // نمایش خطای دقیق‌تر در کنسول مرورگر
+
+          alert("مکان شما ارسال شد!");
         });
       } else {
-        statusElement.innerText = "متأسفانه، مرورگر شما از مکان‌یابی پشتیبانی نمی‌کند.";
-        statusElement.className = "error";
+        alert("مرورگر شما از مکان‌یابی پشتیبانی نمی‌کند.");
       }
     }
+
+    function updateMarkers() {
+      fetch(scriptURL)
+        .then(res => res.json())
+        .then(data => {
+          // حذف نشانگرهای قبلی
+          markers.forEach(m => map.removeLayer(m));
+          markers = [];
+
+          data.forEach(loc => {
+            if (loc.Latitude && loc.Longitude) {
+              const marker = L.marker([loc.Latitude, loc.Longitude]).addTo(map);
+              marker.bindPopup(زمان: ${loc.Timestamp}<br>دقت: ${loc.Accuracy});
+              markers.push(marker);
+            }
+          });
+        });
+    }
+
+    // آپدیت خودکار هر 10 ثانیه
+    setInterval(updateMarkers, 10000);
+    updateMarkers(); // اولین بار
   </script>
 </body>
 </html>
